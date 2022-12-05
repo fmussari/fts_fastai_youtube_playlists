@@ -8,9 +8,6 @@ __all__ = ['IN_NOTEBOOK', 'db_path', 'db', 'cur', 'playlist', 'video', 'pl_sel',
 import streamlit as st
 import sqlite3
 
-import pandas as pd
-import numpy as np
-
 # %% _Deploy_Search_Engine_Streamlit.ipynb 3
 IN_NOTEBOOK = False
 db_path = ''
@@ -23,6 +20,7 @@ except:
 #st.write(st.__version__)
 
 # %% _Deploy_Search_Engine_Streamlit.ipynb 5
+print(f"db_path + 'fastai_yt.db': {db_path + 'fastai_yt.db'}")
 db = sqlite3.connect(db_path + 'fastai_yt.db')
 cur = db.cursor()
 
@@ -57,7 +55,7 @@ if all_options:
 else: 
     options = sel_options
 
-st.write('You selected:', options)
+st.write('Selected playlist(s):', options)
 
 
 # %% _Deploy_Search_Engine_Streamlit.ipynb 10
@@ -89,26 +87,31 @@ def search():
     get_query(q, 5)
 
 with st.form("Input"):
-    queryText = st.text_area("Search query: i.e «fastc*» «fastcore OR paral*»", value='*', height=3, max_chars=None)
+    queryText = st.text_area("Search query: \ne.g. «fastc*», «fastcore OR paral*»", height=1, max_chars=None)
     limit_val = st.slider("Number of results:", min_value=5, max_value=20)
     btnResult = st.form_submit_button('Search')
     
 if btnResult:
-    st.text('Search query generated:')
-    # run query
-    st.write(get_query(queryText, limit_val).replace('*', '\*'))
-    res = cur.execute(get_query(q=queryText, limit=limit_val)).fetchall()
-    st.text('Search results (click to go to YouTube):')
-       
-    res_md = (
-        '  \n  '.join([
-        '  \n  '.join([
-        f"{i}.- Playlist: {playlist[each[0]]}, Video: {video[each[1]]}", 
-        f"'Caption: ...[{each[4].replace('[','**').replace(']','**')}](https://youtu.be/{each[1]}?t={str(int(each[2]))})...'", 
-        '\n'
-        ])
-        for i, each in enumerate(res)
-    ]))
-    
-    st.markdown(res_md)
+    if not queryText:
+        st.text('Please enter a search query.')
+    else:
+        try:
+            st.text('Search query generated:')
+            # run query
+            st.write(get_query(queryText, limit_val).replace('*', '\*'))
+            res = cur.execute(get_query(q=queryText, limit=limit_val)).fetchall()
+            st.text('Search results (click to go to YouTube):')
 
+            res_md = (
+                '  \n  '.join([
+                '  \n  '.join([
+                f"{i}.- Playlist: {playlist[each[0]]}, Video: {video[each[1]]}", 
+                f"'Caption: ...[{each[4].replace('[','**').replace(']','**')}](https://youtu.be/{each[1]}?t={str(int(each[2]))})...'", 
+                '\n'
+                ])
+                for i, each in enumerate(res)
+            ]))
+
+            st.markdown(res_md)
+        except:
+            st.text('Invalid search query.')
